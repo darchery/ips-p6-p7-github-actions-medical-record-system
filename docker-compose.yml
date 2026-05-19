@@ -65,7 +65,7 @@ services:
       - monitoring
   
   # Aplicación de ejemplo de libros con métricas expuestas en /actuator/prometheus
-  books:
+  springuma:
     image: springuma:1.0
     container_name: app-springuma-medics
     ports:

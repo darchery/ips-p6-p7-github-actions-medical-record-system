@@ -92,7 +92,7 @@ system_cpu_usage
 
 ---
 
-## Parte 2 — Dockerización e integración con Prometheus ✅ (Pasos 3-5)
+## Parte 2 — Dockerización e integración con Prometheus ✅ (Pasos 3-6)
 
 ### 2.1 Paso 3 — Construcción de imagen Docker
 
@@ -109,7 +109,7 @@ docker build -t springuma:1.0 .
 ### 2.2 Paso 4 — Integración en docker-compose.yml
 
 **Cambios:**
-- Descomentado servicio `books` → renombrado a `springuma`
+- Descomentado servicio `books` → renombrado a `springuma` (para coherencia con nombre real)
 - `image: springuma:1.0`
 - `container_name: app-springuma-medics`
 - `ports: - "8081:8081"`
@@ -123,11 +123,51 @@ docker build -t springuma:1.0 .
 - `targets: ['springuma:8081']`
 - Permite scraping automático de métricas de la app cada 15 segundos
 
-### 2.4 application.properties — Puerto
+### 2.4 application.properties — Puerto y Histograma
 
-**Cambio:**
-- Añadido `server.port=8081` (línea 11)
-- Evita conflicto con cAdvisor (puerto 8080)
+**Cambios:**
+- Añadido `server.port=8081` (línea 11) - evita conflicto con cAdvisor
+- Añadido `management.metrics.distribution.percentiles-histogram.predict.latency=true` (línea 52) - habilita histogram buckets para P95
+
+### 2.5 Paso 6 — Grafana Provisioning
+
+**Creada estructura `grafana/provisioning/`:**
+
+```
+grafana/provisioning/
+  datasources/
+    datasource.yml          ← Datasource Prometheus (http://prometheus:9090)
+  dashboards/
+    dashboard.yml           ← Provider para carga automática
+    system-monitoring.json  ← Dashboard con 4 paneles
+```
+
+**Dashboard System Monitoring — 4 Paneles:**
+| # | Panel | Métrica | Estado |
+|---|-------|---------|--------|
+| 1 | Tiempo medio respuesta global | `http_server_requests_seconds` | ✅ Funcionando |
+| 2 | Memoria heap usada | `jvm_memory_used_bytes{area="heap"}` | ✅ Funcionando |
+| 3 | Latencia media predicción | `predict_latency_seconds` (sum/count) | ✅ Funcionando |
+| 4 | P95 latencia predicción | `predict_latency_seconds_bucket` | ⏳ Requiere rebuild |
+
+### 2.6 Paso 7 — docker-compose up
+
+**Ejecutado:**
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+**Servicios levantados:**
+- ✅ prometheus (9090)
+- ✅ grafana (3000)
+- ✅ springuma (8081)
+- ✅ node-exporter (9100)
+- ✅ cadvisor (8080)
+
+**Verificación:**
+- ✅ Prometheus scraping: `http://localhost:9090/targets` → spring-boot-medics **UP**
+- ✅ Grafana dashboard: `http://localhost:3000` → System Monitoring visible
 
 ---
 
