@@ -130,3 +130,5 @@ system_cpu_usage
 | `demo/utils/` | **Eliminado** — paquete no escaneado por Spring |
 | `enunciado.txt` | **Añadido** — enunciado de la práctica |
 | `PROGRESS.md` | **Creado** — este documento |
+| `.gitignore` | Añadidas líneas `database.mv.db` y `database.trace.db` |
+| `database.mv.db` | **Eliminado** — archivo binario generado en tiempo de ejecución |

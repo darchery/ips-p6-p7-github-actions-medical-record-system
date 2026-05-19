@@ -2,3 +2,5 @@
 target
 .vscode
 enunciado.txt
+database.mv.db
+database.trace.db
