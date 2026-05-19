@@ -1,0 +1,24 @@
+groups:
+  - name: containers
+    rules:
+      - alert: HighMemoryUsage
+        # Condición: ¿El uso de RAM es > 20% del límite asignado?
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 20
+        # Tiempo de espera: La condición debe cumplirse durante 2 minutos seguidos
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alto consumo de memoria en el contenedor {{ $labels.container }}"
+          description: "Contenedor que utiliza más del 80 % de la memoria asignada durante los últimos 2 minutos."
+      
+      - alert: HighCPUUsage
+        # Condición: uso de CPU > 85% durante 5 minutos
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          team: devops
+        annotations:
+          summary: "Uso de CPU alto en {{ $labels.container }}"
+          description: "El contenedor {{ $labels.container }} en el pod {{ $labels.pod }} está usando más del 85% de CPU durante los últimos 5 minutos."

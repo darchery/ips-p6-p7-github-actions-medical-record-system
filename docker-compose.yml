@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+
+  # Prometheus - Recolección de métricas
+  prometheus:
+    image: prom/prometheus:v3.7.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    #  - ./alerts.yml:/etc/prometheus/alerts.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+
+  # Node Exporter - Métricas del sistema
+  node-exporter:
+    image: prom/node-exporter:v1.10.0
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+
+   # cAdvisor - Métricas de contenedores
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8080:8080"
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - monitoring
+
+  # Grafana - Visualización
+  grafana:
+    image: grafana/grafana:12.3.0
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+  
+  # Aplicación de ejemplo de libros con métricas expuestas en /actuator/prometheus
+  # books:
+  #  image: books:1.0
+  #  container_name: app-books
+  #  ports:
+  #    - "8081:8081"
+  #  networks:
+  #    - monitoring
+
+  # ÚLTIMO PASO
+  # Alertmanager - Gestión de alertas
+  # alertmanager:
+  #   image: prom/alertmanager:v0.28.0
+  #   container_name: alertmanager
+  #   volumes:
+  #     - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+  #   command:
+  #     - '--config.file=/etc/alertmanager/alertmanager.yml'
+  #   ports:
+  #     - "9093:9093"
+  #   networks:
+  #     - monitoring
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

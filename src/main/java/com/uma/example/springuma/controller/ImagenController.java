@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.uma.example.springuma.model.Imagen;
 import com.uma.example.springuma.model.ImagenService;
 import com.uma.example.springuma.model.Paciente;
+import io.micrometer.core.annotation.Timed;
 
 @RestController
 public class ImagenController {
@@ -39,6 +40,8 @@ public class ImagenController {
         return imagenService.getImagen(id);
     }
 
+    // Medición de latencia con Micrometer
+    @Timed(value = "predict.latency", description = "Tiempo de respuesta de predicción", percentiles =  {0.5, 0.95, 0.99})
     @GetMapping("/imagen/predict/{id}")
     public ResponseEntity<?> getImagenPrediction(@PathVariable("id") Long id) {
         try {

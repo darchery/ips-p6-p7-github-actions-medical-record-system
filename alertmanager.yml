@@ -1,0 +1,10 @@
+global:
+  # Tiempo de espera para declarar una alerta como "resuelta" 
+  # si no se recibe una actualización de Prometheus.
+  resolve_timeout: 1m
+
+route:
+  receiver: "null-receiver"
+
+receivers:
+  - name: "null-receiver"
