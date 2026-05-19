@@ -8,7 +8,7 @@ services:
     container_name: prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    #  - ./alerts.yml:/etc/prometheus/alerts.yml
+      - ./alerts.yml:/etc/prometheus/alerts.yml
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -73,19 +73,18 @@ services:
     networks:
       - monitoring
 
-  # ÚLTIMO PASO
   # Alertmanager - Gestión de alertas
-  # alertmanager:
-  #   image: prom/alertmanager:v0.28.0
-  #   container_name: alertmanager
-  #   volumes:
-  #     - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
-  #   command:
-  #     - '--config.file=/etc/alertmanager/alertmanager.yml'
-  #   ports:
-  #     - "9093:9093"
-  #   networks:
-  #     - monitoring
+  alertmanager:
+     image: prom/alertmanager:v0.28.0
+     container_name: alertmanager
+     volumes:
+       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+     command:
+       - '--config.file=/etc/alertmanager/alertmanager.yml'
+     ports:
+       - "9093:9093"
+     networks:
+       - monitoring
 
 networks:
   monitoring:

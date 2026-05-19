@@ -171,29 +171,58 @@ docker-compose up -d
 
 ---
 
-## Parte 2 — Diseño de métricas para Grafana ⏳ (Paso 6 en progreso)
+## Parte 3 — Definición de alertas ✅ (Paso 7)
 
-### Pendiente
-- Crear estructura `grafana/provisioning/`
-- Datasource apuntando a Prometheus
-- Dashboard JSON con 4 paneles:
-  1. **Tiempo medio de respuesta global** — `http_server_requests_seconds`
-  2. **Memoria usada (heap)** — `jvm_memory_used_bytes{area="heap"}`
-  3. **Latencia media de predicción** — `predict_latency_seconds`
-  4. **P95 latencia de predicción** — `predict_latency_seconds`
+### 3.1 Archivo `alerts.yml` — Reglas de alerta
 
----
+**Estructura:** 2 grupos de reglas
+- **Grupo `containers`** (existente):
+  - HighMemoryUsage: `(container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 20` por 2m
+  - HighCPUUsage: `rate(container_cpu_usage_seconds_total[5m]) > 0.85` por 5m
 
-## Parte 3 — Definición de alertas ⏳
+- **Grupo `spring-boot`** (nuevo):
+  - **HighPredictionLatency**: `predict_latency_seconds_sum / predict_latency_seconds_count > 0.5` por 1m
+    - Severity: warning
+    - Detecta latencia media de predicción > 0.5s
+  - **HighMemoryUsage_SpringBoot**: `(jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) * 100 > 30` por 1m
+    - Severity: critical
+    - Detecta uso de heap JVM > 30%
+  - **ServiceDown**: `up{job="spring-boot-medics"} == 0` por 1m
+    - Severity: critical
+    - Detecta si el servicio no responde (up == 0)
 
-### Pendiente
-- Actualizar `alerts.yml` con reglas de Prometheus:
-  1. HighPredictionLatency — `> 0.5s` durante 1 minuto
-  2. HighMemoryUsage — heap > 30%
-  3. ServiceDown — `up == 0` durante 1 minuto
-- Configurar `alertmanager.yml`
-- Descomentar alerting en `prometheus.yml`
-- Añadir servicio app al `docker-compose.yml`
+### 3.2 Archivo `alertmanager.yml` — Gestor de alertas
+
+**Configuración básica:**
+- `global.resolve_timeout: 1m` — tiempo para declarar alerta como resuelta
+- `route.receiver: "null-receiver"` — las alertas no se envían a ningún lado (registro local)
+- `receivers: - name: "null-receiver"` — receptor vacío para la práctica
+
+### 3.3 Archivo `prometheus.yml` — Configuración de alerting
+
+**Descomentadas secciones:**
+```yaml
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - "/etc/prometheus/alerts.yml"
+```
+
+### 3.4 Archivo `docker-compose.yml` — Integración
+
+**Cambios realizados:**
+- Descomentado volumen `./alerts.yml:/etc/prometheus/alerts.yml` en servicio `prometheus` (línea 11)
+  - Permite a Prometheus cargar las reglas de alerta desde el archivo local
+- Descomentado servicio `alertmanager`:
+  - `image: prom/alertmanager:v0.28.0`
+  - `container_name: alertmanager`
+  - `ports: - "9093:9093"`
+  - `volumes: - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml`
+  - `networks: - monitoring`
 
 ---
 
@@ -223,3 +252,22 @@ docker-compose up -d
 | `docker-compose.yml` | **Modificado** — Descomentado/adaptado servicio `springuma` (era `books`) |
 | `prometheus.yml` | **Modificado** — Descomentado/adaptado job `spring-boot-medics` (era `spring-boot-books`) |
 | Imagen Docker | **Creada** — `docker build -t springuma:1.0 .` (multi-stage: Maven + Eclipse Temurin) |
+
+### Parte 2.5 — Grafana Provisioning (Paso 6)
+
+| Archivo | Cambio |
+|---------|--------|
+| `application.properties` | **Modificado** — Añadido `management.metrics.distribution.percentiles-histogram.predict.latency=true` (línea 52) |
+| `docker-compose.yml` | **Modificado** — Renombrado servicio `books:` → `springuma:` (línea 68) |
+| `grafana/provisioning/datasources/datasource.yml` | **Creado** — Datasource Prometheus |
+| `grafana/provisioning/dashboards/dashboard.yml` | **Creado** — Provider de dashboards |
+| `grafana/provisioning/dashboards/system-monitoring.json` | **Creado** — Dashboard con 4 paneles |
+
+### Parte 3 — Alertas (Paso 7)
+
+| Archivo | Cambio |
+|---------|--------|
+| `alerts.yml` | **Modificado** — Añadido grupo `spring-boot` con 3 reglas (HighPredictionLatency, HighMemoryUsage_SpringBoot, ServiceDown) |
+| `prometheus.yml` | **Modificado** — Descomentadas secciones `alerting:` y `rule_files:` |
+| `docker-compose.yml` | **Modificado** — Descomentado volumen alerts.yml en prometheus + descomentado servicio alertmanager |
+| `alertmanager.yml` | ✅ Ya existía con receiver "null-receiver" |

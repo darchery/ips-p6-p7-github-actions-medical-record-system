@@ -12,13 +12,51 @@ groups:
           summary: "Alto consumo de memoria en el contenedor {{ $labels.container }}"
           description: "Contenedor que utiliza más del 80 % de la memoria asignada durante los últimos 2 minutos."
       
-      - alert: HighCPUUsage
-        # Condición: uso de CPU > 85% durante 5 minutos
-        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.85
-        for: 5m
+       - alert: HighCPUUsage
+         # Condición: uso de CPU > 85% durante 5 minutos
+         expr: rate(container_cpu_usage_seconds_total[5m]) > 0.85
+         for: 5m
+         labels:
+           severity: warning
+           team: devops
+         annotations:
+           summary: "Uso de CPU alto en {{ $labels.container }}"
+           description: "El contenedor {{ $labels.container }} en el pod {{ $labels.pod }} está usando más del 85% de CPU durante los últimos 5 minutos."
+
+  - name: spring-boot
+    rules:
+      - alert: HighPredictionLatency
+         # Condición: latencia media de predicción > 0.5s
+        expr: predict_latency_seconds_sum / predict_latency_seconds_count > 0.5
+         # Tiempo de espera: debe mantenerse durante 1 minuto
+        for: 1m
         labels:
           severity: warning
-          team: devops
+          service: springuma
         annotations:
-          summary: "Uso de CPU alto en {{ $labels.container }}"
-          description: "El contenedor {{ $labels.container }} en el pod {{ $labels.pod }} está usando más del 85% de CPU durante los últimos 5 minutos."
+          summary: "Latencia alta en predicción de imágenes"
+          description: "La latencia media de predicción es {{ $value }}s, superior a 0.5s durante el último minuto."
+
+      - alert: HighMemoryUsage_SpringBoot
+         # Condición: uso de heap JVM > 30% del máximo
+        expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) * 100 > 30
+         # Tiempo de espera: debe mantenerse durante 1 minuto
+        for: 1m
+        labels:
+          severity: critical
+          service: springuma
+        annotations:
+          summary: "Alto consumo de memoria JVM (heap)"
+          description: "La aplicación Spring Boot está usando más del 30% de memoria heap ({{ $value }}%) durante el último minuto."
+
+      - alert: ServiceDown
+         # Condición: el servicio spring-boot-medics no responde (up == 0)
+        expr: up{job="spring-boot-medics"} == 0
+         # Tiempo de espera: debe estar caído durante 1 minuto
+        for: 1m
+        labels:
+          severity: critical
+          service: springuma
+        annotations:
+          summary: "Servicio Spring Boot no disponible"
+          description: "El servicio spring-boot-medics ha estado inaccesible durante el último minuto."
