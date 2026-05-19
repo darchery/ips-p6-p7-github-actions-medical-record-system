@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 
 # Expose the port that the Spring Boot application will run on. By default, Spring Boot runs on port 8080, but adjust if your application uses a different port.
-EXPOSE 8080
+EXPOSE 8081
 
 # Options for running the application in a container. The -XX:+UseContainerSupport flag allows the JVM to recognize the container's memory limits, which is important for performance and stability.
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-jar", "app.jar"]

@@ -65,13 +65,13 @@ services:
       - monitoring
   
   # Aplicación de ejemplo de libros con métricas expuestas en /actuator/prometheus
-  # books:
-  #  image: books:1.0
-  #  container_name: app-books
-  #  ports:
-  #    - "8081:8081"
-  #  networks:
-  #    - monitoring
+  books:
+    image: springuma:1.0
+    container_name: app-springuma-medics
+    ports:
+      - "8081:8081"
+    networks:
+      - monitoring
 
   # ÚLTIMO PASO
   # Alertmanager - Gestión de alertas

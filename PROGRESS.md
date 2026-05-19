@@ -92,7 +92,46 @@ system_cpu_usage
 
 ---
 
-## Parte 2 — Diseño de métricas para Grafana ⏳
+## Parte 2 — Dockerización e integración con Prometheus ✅ (Pasos 3-5)
+
+### 2.1 Paso 3 — Construcción de imagen Docker
+
+**Ejecutado:**
+```bash
+docker build -t springuma:1.0 .
+```
+
+**Dockerfile — Cambios:**
+- `EXPOSE 8080` → `EXPOSE 8081` (coherente con puerto de la app)
+- Build multi-stage: Maven (builder) → Eclipse Temurin JRE (runtime)
+- Usuario no-root `spring:spring` para seguridad
+
+### 2.2 Paso 4 — Integración en docker-compose.yml
+
+**Cambios:**
+- Descomentado servicio `books` → renombrado a `springuma`
+- `image: springuma:1.0`
+- `container_name: app-springuma-medics`
+- `ports: - "8081:8081"`
+- `networks: - monitoring`
+
+### 2.3 Paso 5 — Configuración de Prometheus
+
+**prometheus.yml — Cambios:**
+- Descomentado job `spring-boot-books` → renombrado a `spring-boot-medics`
+- `metrics_path: /actuator/prometheus`
+- `targets: ['springuma:8081']`
+- Permite scraping automático de métricas de la app cada 15 segundos
+
+### 2.4 application.properties — Puerto
+
+**Cambio:**
+- Añadido `server.port=8081` (línea 11)
+- Evita conflicto con cAdvisor (puerto 8080)
+
+---
+
+## Parte 2 — Diseño de métricas para Grafana ⏳ (Paso 6 en progreso)
 
 ### Pendiente
 - Crear estructura `grafana/provisioning/`
@@ -120,6 +159,8 @@ system_cpu_usage
 
 ## Archivos modificados/creados
 
+### Parte 1 — Instrumentación
+
 | Archivo | Cambio |
 |---------|--------|
 | `pom.xml` | Añadidas dependencias `actuator` + `micrometer-registry-prometheus` |
@@ -132,3 +173,13 @@ system_cpu_usage
 | `PROGRESS.md` | **Creado** — este documento |
 | `.gitignore` | Añadidas líneas `database.mv.db` y `database.trace.db` |
 | `database.mv.db` | **Eliminado** — archivo binario generado en tiempo de ejecución |
+
+### Parte 2 — Dockerización (Pasos 3-5)
+
+| Archivo | Cambio |
+|---------|--------|
+| `application.properties` | **Modificado** — Añadido `server.port=8081` (línea 11) |
+| `Dockerfile` | **Modificado** — `EXPOSE 8080` → `EXPOSE 8081` |
+| `docker-compose.yml` | **Modificado** — Descomentado/adaptado servicio `springuma` (era `books`) |
+| `prometheus.yml` | **Modificado** — Descomentado/adaptado job `spring-boot-medics` (era `spring-boot-books`) |
+| Imagen Docker | **Creada** — `docker build -t springuma:1.0 .` (multi-stage: Maven + Eclipse Temurin) |

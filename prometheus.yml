@@ -18,10 +18,10 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
 
-  # - job_name: 'spring-boot-books'
-  #   metrics_path: '/actuator/prometheus'
-  #   static_configs:
-  #     - targets: ['books:8081'] 
+  - job_name: 'spring-boot-medics'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['springuma:8081'] 
 
 # alerting:
 #   alertmanagers:
